@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-// ❌ Header ተወግዷል (በ Layout ውስጥ ስላለ)
 import { DashboardCard, MetricCard } from "@/components/dashboard-card";
 import {
   Heart,
@@ -14,7 +13,8 @@ import {
   Activity,
   User,
   BrainCircuit,
-  Loader2
+  Loader2,
+  Stethoscope // አዲስ የተጨመረ
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -45,6 +45,8 @@ export default function DashboardPage() {
         if (res.ok) {
           const result = await res.json();
           setData(result);
+          // የመጀመሪያውን ውጤት ሰሌክት እንዲያደርግ (Optional)
+          if (result.results.length > 0) setSelectedResult(result.results[0]);
         } else {
           router.push("/login");
         }
@@ -57,6 +59,16 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [router]);
 
+  // ዳታውን ለመከፋፈል የሚረዳ ፋንክሽን
+  const getParsedInterpretation = (text) => {
+    if (!text) return { doctor: null, ai: null };
+    const parts = text.split('---');
+    return {
+      doctor: parts[0]?.replace("DOCTOR'S NOTE:", "").trim(),
+      ai: parts[1]?.replace("AI INSIGHT:", "").trim()
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -67,8 +79,6 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full bg-slate-50/50 min-h-screen flex flex-col">
-      {/* ❌ <Header /> ተወግዷል - አሁን አይደገምም */}
-
       <main className="p-6 space-y-8 max-w-7xl mx-auto flex-1 w-full">
         
         {/* Welcome Section */}
@@ -88,34 +98,17 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Health Status</p>
-              <p className="text-xl font-black text-slate-700">Healthy</p>
+              <p className="text-xl font-black text-slate-700">Active</p>
             </div>
           </DashboardCard>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard 
-            label="Total Tests" 
-            value={data.results.length} 
-            icon={<ClipboardList />} 
-          />
-          <MetricCard 
-            label="Completed" 
-            value={data.results.filter(r => r.status === "Completed").length} 
-            icon={<Activity />}
-          />
-          <MetricCard 
-            label="Latest Visit" 
-            value={data.results[0] ? new Date(data.results[0].createdAt).toLocaleDateString() : "N/A"} 
-            icon={<Calendar />}
-            variant="highlight" 
-          />
-          <MetricCard 
-            label="Patient ID" 
-            value={data.mrn} 
-            icon={<User />} 
-          />
+          <MetricCard label="Total Tests" value={data.results.length} icon={<ClipboardList />} />
+          <MetricCard label="Verified" value={data.results.filter(r => r.status === "Verified").length} icon={<CheckCircle2 className="text-emerald-500" size={20}/>} />
+          <MetricCard label="Latest Visit" value={data.results[0] ? new Date(data.results[0].createdAt).toLocaleDateString() : "N/A"} icon={<Calendar />} variant="highlight" />
+          <MetricCard label="Patient ID" value={data.mrn} icon={<User />} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -123,76 +116,83 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-xl font-bold text-slate-800">Recent Result History</h2>
             <div className="grid gap-3">
-              {data.results.length > 0 ? (
-                data.results.map((result) => (
-                  <div 
-                    key={result.id} 
-                    onClick={() => setSelectedResult(result)}
-                    className="cursor-pointer"
-                  >
-                    <DashboardCard className={`group transition-all p-4 bg-white ${selectedResult?.id === result.id ? 'border-blue-500 ring-2 ring-blue-50' : 'hover:shadow-md border-none'}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <ResultIcon type={result.testName} />
-                          <div>
-                            <p className="font-bold text-slate-700 group-hover:text-[#004a7c]">
-                              {result.testName}
-                            </p>
-                            <p className="text-xs text-slate-400 font-medium">
-                              {new Date(result.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${result.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                            {result.status}
-                          </span>
-                          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-600">
-                            <Download size={18}/>
-                          </Button>
+              {data.results.map((result) => (
+                <div key={result.id} onClick={() => setSelectedResult(result)} className="cursor-pointer">
+                  <DashboardCard className={`group transition-all p-5 bg-white ${selectedResult?.id === result.id ? 'border-blue-500 ring-2 ring-blue-50' : 'hover:shadow-md border-none'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <ResultIcon type={result.testName} />
+                        <div>
+                          <p className="font-bold text-slate-700 group-hover:text-[#004a7c]">{result.testName}</p>
+                          <p className="text-xs text-slate-400 font-medium">{new Date(result.createdAt).toLocaleDateString()}</p>
                         </div>
                       </div>
-                    </DashboardCard>
-                  </div>
-                ))
-              ) : (
-                <div className="bg-white p-10 rounded-2xl border-2 border-dashed border-slate-100 text-center">
-                  <p className="text-slate-400 font-bold text-sm">No results available yet.</p>
+                      <div className="flex items-center gap-3">
+                        <Badge className={`text-[10px] font-black px-3 py-1 rounded-full border-none ${result.status === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                          {result.status}
+                        </Badge>
+                        <Button variant="ghost" size="icon" className="text-slate-300 hover:text-blue-600">
+                          <Download size={18}/>
+                        </Button>
+                      </div>
+                    </div>
+                  </DashboardCard>
                 </div>
-              )}
+              ))}
             </div>
           </div>
 
-          {/* AI Insight Panel */}
+          {/* AI & Doctor Insight Panel */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">AI Health Insight</h2>
-            <div className="bg-white p-6 rounded-2xl border border-blue-100 shadow-sm sticky top-6">
-              <div className="flex items-center gap-2 mb-4 text-blue-600">
-                <BrainCircuit className="h-6 w-6" />
-                <span className="font-bold tracking-tight">Gemini AI Analysis</span>
-              </div>
-
+            <h2 className="text-xl font-bold text-slate-800">Clinical Insight</h2>
+            <div className="bg-white p-6 rounded-[32px] border border-blue-50 shadow-xl shadow-blue-900/5 sticky top-6 space-y-6">
+              
               {selectedResult ? (
-                selectedResult.status === "Completed" ? (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Measured Value</p>
-                      <p className="text-2xl font-black text-[#004a7c]">{selectedResult.testValue} {selectedResult.unit}</p>
-                    </div>
-                    <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 text-sm text-slate-700 leading-relaxed">
-                      <strong className="block text-blue-800 mb-1">Interpretation:</strong>
-                      {selectedResult.interpretation || "Our AI is currently processing this laboratory result to give you a simple explanation."}
-                    </div>
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                  {/* Result Value */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Measured Value</p>
+                    <p className="text-3xl font-black text-[#004a7c]">{selectedResult.testValue} <span className="text-sm font-bold text-slate-400">{selectedResult.unit}</span></p>
                   </div>
-                ) : (
-                  <p className="text-slate-500 text-sm italic">This test is still in progress. AI analysis will be generated once results are released.</p>
-                )
+
+                  {selectedResult.status === "Verified" ? (
+                    <div className="space-y-5">
+                      {/* Doctor's Part */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-slate-800">
+                          <Stethoscope size={16} className="text-[#004a7c]" />
+                          <span className="text-xs font-black uppercase tracking-wider">Doctor's Remark</span>
+                        </div>
+                        <div className="p-4 bg-white border-l-4 border-[#004a7c] rounded-r-xl shadow-sm italic text-sm text-slate-600">
+                          {getParsedInterpretation(selectedResult.interpretation).doctor || "No specific note from the doctor."}
+                        </div>
+                      </div>
+
+                      {/* AI Part */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-blue-600">
+                          <BrainCircuit size={16} />
+                          <span className="text-xs font-black uppercase tracking-wider">Gemini AI Analysis</span>
+                        </div>
+                        <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-2xl text-sm text-slate-700 leading-relaxed font-medium">
+                          {getParsedInterpretation(selectedResult.interpretation).ai || "AI analysis is unavailable for this record."}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center space-y-3">
+                      <div className="h-12 w-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto">
+                        <Clock className="text-amber-500 animate-spin-slow" size={24} />
+                      </div>
+                      <p className="text-slate-400 text-sm font-bold uppercase tracking-tighter">Pending Doctor's Review</p>
+                      <p className="text-xs text-slate-400 px-4">Insights will be available once the doctor verifies the results.</p>
+                    </div>
+                  )}
+                </div>
               ) : (
-                <div className="text-center py-10">
-                  <div className="bg-slate-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Activity className="text-slate-300" />
-                  </div>
-                  <p className="text-slate-400 text-sm font-medium px-4">Select a specific result from the list to see an AI-powered health explanation.</p>
+                <div className="text-center py-20 text-slate-300">
+                  <Activity className="mx-auto mb-4 opacity-20" size={48} />
+                  <p className="text-sm font-bold uppercase tracking-widest">Select a result</p>
                 </div>
               )}
             </div>
@@ -201,4 +201,21 @@ export default function DashboardPage() {
       </main>
     </div>
   );
+}
+
+// ትናንሽ ኮምፖነንቶች እዚህ ጋር ካልተጫኑ
+function CheckCircle2(props) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+  )
+}
+
+function Badge({ children, className }) {
+  return <span className={`inline-flex items-center ${className}`}>{children}</span>;
+}
+
+function Clock(props) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  )
 }
