@@ -34,21 +34,18 @@ model User {
   // Relationship
   labResults       LabResult[] @relation("PatientToResults")
 }
-
-// Lab Result Model
 model LabResult {
   id             String   @id @default(cuid())
-  testName       String   // e.g., CBC, Glucose, Malaria
-  category       String   @default("General") // Added: e.g., Hematology, Chemistry
-  testValue      String?  // Made optional because it's null while "Pending"
-  unit           String?  // e.g., mg/dL, g/L
-  status         String   @default("Pending") // Pending, Completed
-  interpretation String?  @db.Text // AI or Doctor's note
+  testName       String   
+  category       String   @default("General")
+  testValue      String?  
+  unit           String?  
+  status         String   @default("PENDING_DOCTOR") // <-- እዚህ ጋር ቀይሪው
+  interpretation String?  @db.Text 
   
-  // Relationship
   patientId      String
-  patient        User     @relation("PatientToResults", fields: [patientId], references: [id], onDelete: Cascade) // Added Cascade
+  patient        User     @relation("PatientToResults", fields: [patientId], references: [id], onDelete: Cascade)
   
   createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt // Added: Tracks when the result was actually entered
+  updatedAt      DateTime @updatedAt 
 }

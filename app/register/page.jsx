@@ -123,11 +123,6 @@ export default function RegisterPage() {
         </div>
       </main>
 
-      <footer className="w-full py-6 border-t border-border bg-background text-center">
-        <p className="text-sm text-muted-foreground">
-          © 2026 Alatyon Hospital. All rights reserved.
-        </p>
-      </footer>
     </div>
   );
 }

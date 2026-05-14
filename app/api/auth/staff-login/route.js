@@ -1,63 +1,59 @@
 import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/auth';
-import { NextRequest, NextResponse } from 'next/server'; // Added NextRequest
-import bcrypt from 'bcryptjs';
+import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs'; // 1. bcrypt አስገቢ
 
-export async function POST(request: NextRequest) { // Added Type to fix red underline
+export async function POST(request) {
     try {
         const { identifier, password } = await request.json();
 
-        // 1. Search for user (By Email or MRN)
+        // 2. ሰራተኛውን መፈለግ
         const user = await prisma.user.findFirst({
             where: {
-                OR: [
-                    { email: identifier.toLowerCase() },
-                    { mrn: identifier }
-                ]
+                email: identifier.toLowerCase(),
+                NOT: { role: 'Patient' }
             }
         });
 
         if (!user) {
             return NextResponse.json(
-                { error: "User not found!" }, 
-                { status: 404 }
-            );
-        }
-
-        // 2. Verify Password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return NextResponse.json(
-                { error: "Invalid password!" }, 
+                { success: false, error: "ተጠቃሚው አልተገኘም" }, 
                 { status: 401 }
             );
         }
 
-        // 3. Generate Token
+        // 3. ፓስወርዱን በ bcrypt ማወዳደር (አስፈላጊው ክፍል ይሄ ነው!)
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        
+        if (!isPasswordValid) {
+            return NextResponse.json(
+                { success: false, error: "የገቡት ፓስወርድ ስህተት ነው" }, 
+                { status: 401 }
+            );
+        }
+
+        // 4. Token ማመንጨት
         const token = signToken({ id: user.id, email: user.email, role: user.role });
 
         const response = NextResponse.json({ 
             success: true, 
-            role: user.role,
+            role: user.role, 
             name: user.name 
         });
 
-        // 4. Set Cookie
+        // 5. ኩኪ ላይ ማስቀመጥ
         response.cookies.set('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 86400, // 24 hours
+            maxAge: 86400,
             path: '/',
         });
 
         return response;
 
     } catch (error) {
-        console.error("LOGIN_ERROR:", error);
-        return NextResponse.json(
-            { error: "Login failed. Please try again." }, 
-            { status: 500 }
-        );
+        console.error("STAFF_LOGIN_ERROR:", error);
+        return NextResponse.json({ error: "የሰራተኛ ሎጊን አልተሳካም" }, { status: 500 });
     }
 }
