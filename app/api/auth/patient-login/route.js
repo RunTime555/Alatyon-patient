@@ -1,15 +1,20 @@
 import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs'; // 1. bcryptjs እዚህ ጋር መጣ
 
 export async function POST(request) {
     try {
         const { identifier, password } = await request.json();
 
+        // ኮንሶል ላይ የመጣውን ዳታ ለማየት
+        console.log("=== PATIENT LOGIN ATTEMPT ===");
+        console.log("Identifier:", identifier);
+
         // 1. ታካሚውን መፈለግ (role: 'Patient' መሆኑን በማረጋገጥ)
         const user = await prisma.user.findFirst({
             where: {
-                role: 'Patient', // ታካሚ ብቻ
+                role: 'Patient', // በዳታቤዝሽ 'Patient' ስለሆነ ይገጥማል
                 OR: [
                     { email: identifier.toLowerCase() },
                     { mrn: identifier }
@@ -17,13 +22,30 @@ export async function POST(request) {
             }
         });
 
-        // 2. ካልተገኘ
-        if (!user || user.password !== password) {
+        // ታካሚው ዳታቤዝ ውስጥ ከሌለ
+        if (!user) {
+            console.log("❌ Login Failed: Patient not found in DB.");
             return NextResponse.json(
                 { success: false, error: "የታካሚ መለያ መረጃው ስህተት ነው" }, 
                 { status: 401 }
             );
         }
+
+        console.log("Found Patient:", user.email, "Hashed Password in DB:", user.password);
+
+        // 2. በ Bcrypt አማካኝነት የተመሰጠረውን ፓስወርድ ማወዳደር
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log("Is Password Valid?:", isPasswordValid);
+
+        if (!isPasswordValid) {
+            console.log("❌ Login Failed: Password Mismatch.");
+            return NextResponse.json(
+                { success: false, error: "የታካሚ መለያ መረጃው ስህተት ነው" }, 
+                { status: 401 }
+            );
+        }
+
+        console.log("✅ Login Success for:", user.name);
 
         // 3. Token
         const token = signToken({ id: user.id, email: user.email || user.mrn, role: 'Patient' });
@@ -33,7 +55,7 @@ export async function POST(request) {
             name: user.name 
         });
 
-        // 4. ኩኪ (ለታካሚ ረዘም ያለ ጊዜ 7 ቀን ብንሰጠው ይመረጣል)
+        // 4. ኩኪ
         response.cookies.set('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
