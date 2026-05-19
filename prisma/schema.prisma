@@ -7,9 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// የታካሚዎች ሰንጠረዥ (Sample model)
-model Patient {
-  id    Int     @id @default(autoincrement())
-  name  String
-  email String  @unique
+
+// User Model
+model User {
+  id               String      @id @default(cuid())
+  mrn              String?     @unique 
+  name             String
+  email            String      @unique
+  password         String
+  role             String      @default("Patient") // Patient, Admin, LabTechnician
+  
+  // --- አዲስ የተጨመሩ የፕሮፋይል ክፍሎች ---
+  phone            String?
+  address          String?
+  image            String?     @db.Text
+  bloodGroup       String?
+  emergencyContact String?
+  emergencyPhone   String?
+  occupation       String?
+  dob              String?
+  // ----------------------------------
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt 
+
+  // Relationship
+  labResults       LabResult[] @relation("PatientToResults")
+}
+model LabResult {
+  id             String   @id @default(cuid())
+  testName       String   
+  category       String   @default("General")
+  testValue      String?  
+  unit           String?  
+  status         String   @default("PENDING_DOCTOR") // <-- እዚህ ጋር ቀይሪው
+  interpretation String?  @db.Text 
+  
+  patientId      String
+  patient        User     @relation("PatientToResults", fields: [patientId], references: [id], onDelete: Cascade)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt 
 }
