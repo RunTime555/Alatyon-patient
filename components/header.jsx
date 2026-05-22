@@ -8,93 +8,81 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export function Header({ title }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
-      } catch (err) {
-        console.error("Header user fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchUser();
+    fetch("/api/profile")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setUser(d); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  const getInitial = (name) => {
+  const getInitials = (name) => {
     if (!name) return "U";
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
   const getRoleColor = (role) => {
     switch (role?.toLowerCase()) {
-      case "admin": return "bg-red-600";
-      case "labtechnician": return "bg-blue-600";
-      case "doctor": return "bg-emerald-600";
-      default: return "bg-[#004a7c]"; 
+      case "admin":          return "bg-red-600";
+      case "labtechnician":  return "bg-blue-600";
+      case "doctor":         return "bg-emerald-600";
+      default:               return "bg-[#003a66]";
     }
   };
 
   return (
-    <header className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 sticky top-0 z-30 shadow-sm print:hidden">
-      
-      {/* ግራ በኩል: Title */}
-      <div className="flex items-center gap-4">
-        <div className="w-10 lg:hidden flex-shrink-0" />
-        <h2 className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.2em] truncate max-w-[150px] md:max-w-none">
+    <header className="h-16 border-b border-blue-100 bg-white flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm print:hidden shrink-0">
+
+      {/* Left — spacer for mobile hamburger + title */}
+      <div className="flex items-center gap-3">
+        {/* 40px spacer aligns title past the hamburger button on mobile */}
+        <div className="w-10 lg:hidden shrink-0" />
+        <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.2em] truncate max-w-[140px] sm:max-w-none">
           {title}
-        </h2>
+        </p>
       </div>
 
-      {/* ቀኝ በኩል: Profile (መጀመሪያ) እና Logout (መጨረሻ) */}
-      <div className="flex items-center gap-2 md:gap-6">
-        
+      {/* Right — user info + logout */}
+      <div className="flex items-center gap-2 md:gap-4">
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
         ) : (
-          <div className="flex items-center gap-3 md:gap-6">
-            
-            {/* 1. User Profile Section (አሁን መጀመሪያ መጥቷል) */}
-            <div className="flex items-center gap-3 border-r pr-4 border-slate-100">
+          <>
+            {/* User info */}
+            <div className="flex items-center gap-2 sm:gap-3 border-r border-slate-100 pr-3 sm:pr-4">
               <div className="text-right hidden sm:block">
-                <p className="text-[11px] font-black text-slate-800 leading-none uppercase">
+                <p className="text-[11px] font-black text-slate-800 leading-none uppercase truncate max-w-[120px]">
                   {user?.name || "Guest User"}
                 </p>
-                <p className="text-[9px] text-emerald-600 font-bold mt-1 uppercase tracking-tighter">
+                <p className="text-[9px] text-blue-600 font-bold mt-1 uppercase tracking-tighter">
                   {user?.role || "Patient"}
                 </p>
               </div>
-              
-              <Avatar className="h-8 w-8 md:h-9 md:w-9 border-2 border-slate-50 shadow-sm flex-shrink-0">
+              <Avatar className="h-8 w-8 md:h-9 md:w-9 border-2 border-blue-50 shadow-sm shrink-0">
                 {user?.image ? (
-                  <img src={user.image} alt="profile" className="h-full w-full object-cover" />
+                  <img src={user.image} alt="profile" className="h-full w-full object-cover rounded-full" />
                 ) : (
                   <AvatarFallback className={cn("text-white text-[10px] font-black", getRoleColor(user?.role))}>
-                    {getInitial(user?.name)}
+                    {getInitials(user?.name)}
                   </AvatarFallback>
                 )}
               </Avatar>
             </div>
 
-            {/* 2. Logout Button (አሁን መጨረሻ ላይ ሆኗል) */}
+            {/* Logout */}
             <Link href="/">
-              <Button 
-                variant="ghost" 
-                className="text-slate-400 hover:bg-red-50 hover:text-red-600 font-bold gap-2 text-xs h-9 px-2 md:px-3 rounded-xl transition-all"
+              <Button
+                variant="ghost"
+                className="text-slate-400 hover:bg-red-50 hover:text-red-600 font-bold gap-1.5 text-xs h-9 px-2 md:px-3 rounded-xl transition-all"
               >
-                <LogOut size={16} />
+                <LogOut size={15} />
                 <span className="hidden md:inline">Log out</span>
               </Button>
             </Link>
-
-          </div>
+          </>
         )}
       </div>
     </header>

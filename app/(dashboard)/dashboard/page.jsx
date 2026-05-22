@@ -2,220 +2,224 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardCard, MetricCard } from "@/components/dashboard-card";
 import {
-  Heart,
-  Calendar,
-  ClipboardList,
-  Download,
-  Droplet,
-  TestTube,
-  Activity,
-  User,
-  BrainCircuit,
-  Loader2,
-  Stethoscope // አዲስ የተጨመረ
+  Heart, Calendar, ClipboardList, Download,
+  Droplet, TestTube, Activity, User,
+  BrainCircuit, Loader2, Stethoscope, Clock,
+  CheckCircle2, AlertCircle
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
   return "Good evening";
 }
 
 function ResultIcon({ type }) {
-  const lowerName = type?.toLowerCase() || "";
-  if (lowerName.includes("blood")) return <Droplet className="h-5 w-5 text-red-500" />;
-  if (lowerName.includes("glucose") || lowerName.includes("sugar")) return <Activity className="h-5 w-5 text-orange-500" />;
-  return <TestTube className="h-5 w-5 text-blue-500" />;
+  const t = type?.toLowerCase() ?? "";
+  if (t.includes("blood")) return <Droplet className="h-4 w-4 text-red-500" />;
+  if (t.includes("glucose") || t.includes("sugar")) return <Activity className="h-4 w-4 text-orange-500" />;
+  return <TestTube className="h-4 w-4 text-blue-500" />;
 }
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [data, setData] = useState({ name: "", mrn: "", results: [] });
-  const [loading, setLoading] = useState(true);
-  const [selectedResult, setSelectedResult] = useState(null);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const res = await fetch("/api/dashboard");
-        if (res.ok) {
-          const result = await res.json();
-          setData(result);
-          // የመጀመሪያውን ውጤት ሰሌክት እንዲያደርግ (Optional)
-          if (result.results.length > 0) setSelectedResult(result.results[0]);
-        } else {
-          router.push("/login");
-        }
-      } catch (err) {
-        console.error("Dashboard Fetch Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
-  }, [router]);
-
-  // ዳታውን ለመከፋፈል የሚረዳ ፋንክሽን
-  const getParsedInterpretation = (text) => {
-    if (!text) return { doctor: null, ai: null };
-    const parts = text.split('---');
-    return {
-      doctor: parts[0]?.replace("DOCTOR'S NOTE:", "").trim(),
-      ai: parts[1]?.replace("AI INSIGHT:", "").trim()
-    };
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
+function MetricCard({ label, value, icon: Icon }) {
   return (
-    <div className="w-full bg-slate-50/50 min-h-screen flex flex-col">
-      <main className="p-6 space-y-8 max-w-7xl mx-auto flex-1 w-full">
-        
-        {/* Welcome Section */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-1">
-            <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">
-              {getGreeting()}, {data.name}! 
-            </h1>
-            <p className="text-lg text-[#004a7c] font-medium opacity-90">
-              Your Medical ID: <span className="font-mono bg-blue-100 px-2 py-1 rounded">{data.mrn}</span>
-            </p>
-          </div>
-
-          <DashboardCard className="flex items-center gap-4 bg-white border-none shadow-sm py-4 px-6">
-            <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center border border-red-100 animate-pulse">
-              <Heart className="h-6 w-6 text-red-500 fill-red-500" />
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Health Status</p>
-              <p className="text-xl font-black text-slate-700">Active</p>
-            </div>
-          </DashboardCard>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard label="Total Tests" value={data.results.length} icon={<ClipboardList />} />
-          <MetricCard label="Verified" value={data.results.filter(r => r.status === "Verified").length} icon={<CheckCircle2 className="text-emerald-500" size={20}/>} />
-          <MetricCard label="Latest Visit" value={data.results[0] ? new Date(data.results[0].createdAt).toLocaleDateString() : "N/A"} icon={<Calendar />} variant="highlight" />
-          <MetricCard label="Patient ID" value={data.mrn} icon={<User />} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Result History */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">Recent Result History</h2>
-            <div className="grid gap-3">
-              {data.results.map((result) => (
-                <div key={result.id} onClick={() => setSelectedResult(result)} className="cursor-pointer">
-                  <DashboardCard className={`group transition-all p-5 bg-white ${selectedResult?.id === result.id ? 'border-blue-500 ring-2 ring-blue-50' : 'hover:shadow-md border-none'}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <ResultIcon type={result.testName} />
-                        <div>
-                          <p className="font-bold text-slate-700 group-hover:text-[#004a7c]">{result.testName}</p>
-                          <p className="text-xs text-slate-400 font-medium">{new Date(result.createdAt).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge className={`text-[10px] font-black px-3 py-1 rounded-full border-none ${result.status === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                          {result.status}
-                        </Badge>
-                        <Button variant="ghost" size="icon" className="text-slate-300 hover:text-blue-600">
-                          <Download size={18}/>
-                        </Button>
-                      </div>
-                    </div>
-                  </DashboardCard>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* AI & Doctor Insight Panel */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">Clinical Insight</h2>
-            <div className="bg-white p-6 rounded-[32px] border border-blue-50 shadow-xl shadow-blue-900/5 sticky top-6 space-y-6">
-              
-              {selectedResult ? (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                  {/* Result Value */}
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Measured Value</p>
-                    <p className="text-3xl font-black text-[#004a7c]">{selectedResult.testValue} <span className="text-sm font-bold text-slate-400">{selectedResult.unit}</span></p>
-                  </div>
-
-                  {selectedResult.status === "Verified" ? (
-                    <div className="space-y-5">
-                      {/* Doctor's Part */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-slate-800">
-                          <Stethoscope size={16} className="text-[#004a7c]" />
-                          <span className="text-xs font-black uppercase tracking-wider">Doctor's Remark</span>
-                        </div>
-                        <div className="p-4 bg-white border-l-4 border-[#004a7c] rounded-r-xl shadow-sm italic text-sm text-slate-600">
-                          {getParsedInterpretation(selectedResult.interpretation).doctor || "No specific note from the doctor."}
-                        </div>
-                      </div>
-
-                      {/* AI Part */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-blue-600">
-                          <BrainCircuit size={16} />
-                          <span className="text-xs font-black uppercase tracking-wider">Gemini AI Analysis</span>
-                        </div>
-                        <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-2xl text-sm text-slate-700 leading-relaxed font-medium">
-                          {getParsedInterpretation(selectedResult.interpretation).ai || "AI analysis is unavailable for this record."}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="py-10 text-center space-y-3">
-                      <div className="h-12 w-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto">
-                        <Clock className="text-amber-500 animate-spin-slow" size={24} />
-                      </div>
-                      <p className="text-slate-400 text-sm font-bold uppercase tracking-tighter">Pending Doctor's Review</p>
-                      <p className="text-xs text-slate-400 px-4">Insights will be available once the doctor verifies the results.</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-20 text-slate-300">
-                  <Activity className="mx-auto mb-4 opacity-20" size={48} />
-                  <p className="text-sm font-bold uppercase tracking-widest">Select a result</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
+    <div className="bg-white rounded-2xl border border-blue-50 p-4 sm:p-5 shadow-sm flex items-center gap-4">
+      <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+        <Icon size={17} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{label}</p>
+        <p className="text-base font-black text-slate-800 mt-1 truncate">{value}</p>
+      </div>
     </div>
   );
 }
 
-// ትናንሽ ኮምፖነንቶች እዚህ ጋር ካልተጫኑ
-function CheckCircle2(props) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-  )
-}
+const isApproved = (s) => ["Verified", "COMPLETED"].includes(s);
 
-function Badge({ children, className }) {
-  return <span className={`inline-flex items-center ${className}`}>{children}</span>;
-}
+export default function DashboardPage() {
+  const router = useRouter();
+  const [data, setData]                     = useState({ name: "", mrn: "", results: [] });
+  const [loading, setLoading]               = useState(true);
+  const [selectedResult, setSelectedResult] = useState(null);
 
-function Clock(props) {
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then(r => { if (!r.ok) { router.push("/login"); return null; } return r.json(); })
+      .then(d => {
+        if (!d) return;
+        setData(d);
+        const approved = (d.results ?? []).filter(r => isApproved(r.status));
+        if (approved.length > 0) setSelectedResult(approved[0]);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  const getParsed = (text) => {
+    if (!text) return { doctor: null, ai: null };
+    const parts = text.split("---");
+    return {
+      doctor: parts[0]?.replace(/DOCTOR['']?S?\s*NOTE:?/i, "").trim() || null,
+      ai:     parts[1]?.replace(/AI\s*(INSIGHT|ANALYSIS):?/i, "").trim() || null,
+    };
+  };
+
+  // ── Only show approved results ──
+  const approvedResults = (data.results ?? []).filter(r => isApproved(r.status));
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-9 w-9 animate-spin text-blue-600" />
+    </div>
+  );
+
   return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-  )
+    <div className="space-y-5 pb-10">
+
+      {/* ── Welcome ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800">
+            {getGreeting()}, {data.name || "Patient"}!
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Medical ID:{" "}
+            <span className="font-mono bg-blue-100 text-[#003a66] font-bold px-2 py-0.5 rounded-lg text-xs">
+              {data.mrn}
+            </span>
+          </p>
+        </div>
+        <div className="flex items-center gap-3 bg-white border border-blue-50 rounded-2xl px-4 py-3 shadow-sm w-fit">
+          <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center border border-red-100 shrink-0">
+            <Heart className="h-4 w-4 text-red-500 fill-red-400 animate-pulse" />
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none">Health Status</p>
+            <p className="text-sm font-black text-slate-700 mt-0.5">Active</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricCard label="Total Tests"  value={data.results.length}   icon={ClipboardList} />
+        <MetricCard label="Approved"     value={approvedResults.length} icon={CheckCircle2} />
+        <MetricCard label="Pending"      value={data.results.filter(r => r.status === "PENDING_DOCTOR").length} icon={Clock} />
+        <MetricCard
+          label="Latest Visit"
+          value={approvedResults[0] ? new Date(approvedResults[0].createdAt).toLocaleDateString() : "N/A"}
+          icon={Calendar}
+        />
+      </div>
+
+      {/* ── Main ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Approved results only */}
+        <div className="lg:col-span-2 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-wide">Approved Results</h2>
+            <span className="text-[10px] font-bold text-slate-400">{approvedResults.length} result{approvedResults.length !== 1 ? "s" : ""}</span>
+          </div>
+
+          {approvedResults.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-blue-200 p-12 text-center">
+              <Clock size={26} className="text-amber-300 mx-auto mb-3" />
+              <p className="text-slate-500 font-bold text-sm">No approved results yet</p>
+              <p className="text-xs text-slate-400 mt-1">Your results will appear here once the doctor reviews them.</p>
+            </div>
+          ) : (
+            approvedResults.map((result) => {
+              const active = selectedResult?.id === result.id;
+              return (
+                <div
+                  key={result.id}
+                  onClick={() => setSelectedResult(result)}
+                  className={`bg-white rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-md
+                    ${active ? "border-blue-400 ring-2 ring-blue-100 shadow-md" : "border-blue-50 hover:border-blue-200"}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                      <ResultIcon type={result.testName} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-700 text-sm truncate">{result.testName}</p>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5">
+                        {new Date(result.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
+                      <CheckCircle2 size={10} /> Approved
+                    </span>
+                    <button
+                      onClick={e => e.stopPropagation()}
+                      className="w-8 h-8 rounded-xl hover:bg-blue-50 flex items-center justify-center text-slate-300 hover:text-blue-600 transition-all shrink-0"
+                    >
+                      <Download size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Clinical insight */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-wide">Clinical Insight</h2>
+          <div className="bg-white rounded-2xl border border-blue-50 p-5 shadow-sm sticky top-20">
+            {!selectedResult ? (
+              <div className="text-center py-14">
+                <Activity size={32} className="text-blue-100 mx-auto mb-3" />
+                <p className="text-slate-400 font-bold text-sm">Select a result</p>
+                <p className="text-xs text-slate-300 mt-1">Tap any row to view details</p>
+              </div>
+            ) : (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                {/* Value */}
+                <div className="p-4 bg-[#f0f6ff] rounded-xl">
+                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Measured Value</p>
+                  <p className="text-3xl font-black text-[#003a66]">
+                    {selectedResult.testValue ?? selectedResult.resultValue ?? "—"}
+                    {selectedResult.unit && (
+                      <span className="text-sm font-bold text-slate-400 ml-1">{selectedResult.unit}</span>
+                    )}
+                  </p>
+                  <p className="text-xs font-bold text-slate-500 mt-1">{selectedResult.testName}</p>
+                </div>
+
+                {/* Doctor note */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Stethoscope size={13} className="text-[#003a66]" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Doctor's Remark</p>
+                  </div>
+                  <div className="p-3 bg-white border-l-4 border-[#003a66] rounded-r-xl text-xs text-slate-600 italic leading-relaxed">
+                    {getParsed(selectedResult.interpretation).doctor
+                      || selectedResult.doctorComment
+                      || "No specific note from the doctor."}
+                  </div>
+                </div>
+
+                {/* AI */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <BrainCircuit size={13} className="text-blue-600" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">AI Analysis</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-slate-700 leading-relaxed">
+                    {getParsed(selectedResult.interpretation).ai
+                      || "AI analysis unavailable for this record."}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

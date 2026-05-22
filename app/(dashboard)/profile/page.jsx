@@ -1,219 +1,269 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-// ✅ Header ተወግዷል (በ Layout ውስጥ ስላለ)
-import { DashboardCard } from "@/components/dashboard-card";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useRef } from "react";
+import {
+  User, Phone, MapPin, Camera, Save, X, Loader2,
+  Fingerprint, Droplet, ShieldAlert, CheckCircle2
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  User, Phone, MapPin, Camera, Save, X, Loader2, 
-  Fingerprint, Droplet, ShieldAlert 
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading]     = useState(true);
+  const [saving, setSaving]       = useState(false);
+  const [saved, setSaved]         = useState(false);
   const fileInputRef = useRef(null);
-  
+
   const [profile, setProfile] = useState({
-    name: "", 
-    email: "", 
-    phone: "", 
-    address: "",
-    mrn: "", 
-    image: null, 
-    bloodGroup: "", // መጀመሪያ ባዶ እንዲሆን
-    emergencyContact: "", 
-    emergencyPhone: "",
-    occupation: "", 
-    dob: ""
+    name: "", email: "", phone: "", address: "",
+    mrn: "", image: null, bloodGroup: "",
+    emergencyContact: "", emergencyPhone: "",
+    occupation: "", dob: ""
   });
 
+  // Keep a copy to cancel edits
+  const [original, setOriginal] = useState(null);
+
   useEffect(() => {
-    async function fetchProfile() {
-      try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(prev => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.error("Profile load error:", err);
-      } finally { setLoading(false); }
-    }
-    fetchProfile();
+    fetch("/api/profile")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { setProfile(p => ({ ...p, ...d })); setOriginal({ ...d }); } })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const res = await fetch("/api/profile", {
-        method: "PUT",
+        method:  "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
+        body:    JSON.stringify(profile),
       });
       if (res.ok) {
+        setOriginal({ ...profile });
         setIsEditing(false);
-        window.location.reload(); // ✅ ለውጦች በየቦታው እንዲታዩ
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
       } else {
-        alert("Failed to update profile");
+        alert("Failed to update profile.");
       }
-    } catch (err) {
-      alert("Error saving profile");
-    } finally { setSaving(false); }
+    } catch {
+      alert("Error saving profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (original) setProfile(p => ({ ...p, ...original }));
+    setIsEditing(false);
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) { 
-        alert("Image too large. Please use an image under 2MB.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => setProfile({ ...profile, image: reader.result });
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2MB."); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => setProfile(p => ({ ...p, image: reader.result }));
+    reader.readAsDataURL(file);
   };
 
-  if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-slate-50">
-      <Loader2 className="animate-spin text-[#004a7c]" size={40} />
+  const Field = ({ label, field, type = "text", readOnly = false }) => (
+    <div className="space-y-1.5">
+      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">{label}</Label>
+      {isEditing && !readOnly ? (
+        <Input
+          type={type}
+          value={profile[field] ?? ""}
+          onChange={e => setProfile(p => ({ ...p, [field]: e.target.value }))}
+          className="h-11 rounded-xl bg-[#f0f6ff] border-blue-100 font-semibold text-slate-700 focus-visible:ring-blue-300"
+        />
+      ) : (
+        <p className={`text-sm font-semibold ${readOnly ? "text-slate-400" : "text-slate-700"}`}>
+          {profile[field] || "Not specified"}
+        </p>
+      )}
     </div>
   );
 
-  return (
-    <div className="w-full min-h-screen bg-slate-50/50 pb-10">
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
-        
-        {/* Profile Header Card */}
-        <DashboardCard className="relative overflow-hidden p-0 border-none shadow-lg bg-white rounded-2xl">
-          <div className="h-32 md:h-48 bg-gradient-to-r from-[#004a7c] to-blue-600 w-full" />
-          <div className="px-8 pb-8 flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16 md:-mt-20 relative z-10">
-            <div className="relative group">
-              <div className="h-32 w-32 md:h-40 md:w-40 rounded-2xl border-4 border-white bg-white flex items-center justify-center overflow-hidden shadow-2xl">
-                {profile.image ? (
-                  <img src={profile.image} alt="Profile" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="h-full w-full bg-blue-50 flex items-center justify-center text-[#004a7c]">
-                    <User size={60} />
-                  </div>
-                )}
-              </div>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-2 -right-2 bg-[#004a7c] p-2 rounded-xl text-white border-2 border-white hover:scale-110 transition-transform"
-              >
-                <Camera size={20} />
-              </button>
-              <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
-            </div>
-            
-            <div className="flex-1 text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">{profile.name}</h1>
-              <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
-                <span className="flex items-center gap-1 bg-blue-50 text-[#004a7c] px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
-                  <Fingerprint size={14} /> MRN: {profile.mrn}
-                </span>
-                <span className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold border border-red-100">
-                  <Droplet size={14} /> Blood: {profile.bloodGroup || "Not Set"}
-                </span>
-              </div>
-            </div>
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="animate-spin text-blue-600" size={36} />
+    </div>
+  );
 
-            <div className="flex gap-2">
-              {isEditing ? (
-                <>
-                  <Button onClick={handleSave} disabled={saving} className="bg-[#004a7c] hover:bg-[#003a63]">
-                    {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save size={16} className="mr-2" />} Save
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsEditing(false)}> <X size={16} /> </Button>
-                </>
+  const initials = profile.name
+    ? profile.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+    : "PT";
+
+  return (
+    <div className="space-y-5 pb-10">
+
+      {/* Saved toast */}
+      {saved && (
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-4 py-3 rounded-2xl">
+          <CheckCircle2 size={15} /> Profile updated successfully.
+        </div>
+      )}
+
+      {/* ── Hero card ── */}
+      <div className="bg-white rounded-2xl border border-blue-50 shadow-sm overflow-hidden">
+        <div className="h-28 sm:h-36 bg-gradient-to-r from-[#003a66] to-blue-500" />
+        <div className="px-5 sm:px-8 pb-6 flex flex-col sm:flex-row sm:items-end gap-5 -mt-14 sm:-mt-16 relative z-10">
+
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-4 border-white bg-white overflow-hidden shadow-xl">
+              {profile.image ? (
+                <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <Button onClick={() => setIsEditing(true)} className="bg-[#004a7c] hover:bg-[#003a63] font-bold">Edit Profile</Button>
+                <div className="w-full h-full bg-blue-50 flex items-center justify-center text-[#003a66]">
+                  <User size={52} />
+                </div>
               )}
             </div>
-          </div>
-        </DashboardCard>
-
-        {/* Info Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <DashboardCard className="bg-white p-6 rounded-2xl shadow-sm border-none">
-              <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-2"><User size={20} className="text-[#004a7c]" /> Identity & Health</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase">Full Name</Label>
-                  {isEditing ? <Input value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} /> : <p className="font-semibold">{profile.name}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase text-red-500">Blood Group</Label>
-                  {isEditing ? (
-                    <select 
-                      className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-2 focus:ring-[#004a7c] outline-none bg-white" 
-                      value={profile.bloodGroup} 
-                      onChange={(e) => setProfile({...profile, bloodGroup: e.target.value})}
-                    >
-                      <option value="">Select Type</option>
-                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="font-bold text-red-600">{profile.bloodGroup || "Not Specified"}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase">Occupation</Label>
-                  {isEditing ? <Input value={profile.occupation} onChange={(e) => setProfile({...profile, occupation: e.target.value})} /> : <p className="font-semibold">{profile.occupation || "Not Specified"}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase">Date of Birth</Label>
-                  {isEditing ? <Input type="date" value={profile.dob} onChange={(e) => setProfile({...profile, dob: e.target.value})} /> : <p className="font-semibold">{profile.dob || "Not Set"}</p>}
-                </div>
-              </div>
-            </DashboardCard>
-
-            <DashboardCard className="bg-white p-6 rounded-2xl shadow-sm border-none">
-              <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-2"><MapPin size={20} className="text-[#004a7c]" /> Contact Info</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-xs font-bold text-slate-400 uppercase">Email</Label><p className="bg-slate-50 p-2 rounded text-slate-500">{profile.email}</p></div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase">Phone</Label>
-                  {isEditing ? <Input value={profile.phone} onChange={(e) => setProfile({...profile, phone: e.target.value})} /> : <p className="font-semibold">{profile.phone}</p>}
-                </div>
-                <div className="col-span-full space-y-2">
-                  <Label className="text-xs font-bold text-slate-400 uppercase">Address</Label>
-                  {isEditing ? <Input value={profile.address} onChange={(e) => setProfile({...profile, address: e.target.value})} /> : <p className="font-semibold">{profile.address || "Not Set"}</p>}
-                </div>
-              </div>
-            </DashboardCard>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-2 -right-2 w-9 h-9 bg-[#003a66] hover:bg-blue-600 rounded-xl flex items-center justify-center text-white border-2 border-white shadow-md transition-all"
+            >
+              <Camera size={15} />
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
           </div>
 
-          <div className="space-y-6">
-            <DashboardCard className="bg-red-50 p-6 rounded-2xl border-l-4 border-l-red-500 border-none shadow-sm">
-              <h3 className="font-bold text-red-800 mb-4 flex items-center gap-2"><ShieldAlert size={18} /> Emergency Contact</h3>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <Label className="text-[10px] font-bold text-red-400 uppercase">Contact Name</Label>
-                  {isEditing ? <Input className="bg-white" value={profile.emergencyContact} onChange={(e) => setProfile({...profile, emergencyContact: e.target.value})} /> : <p className="font-bold text-slate-700">{profile.emergencyContact || "Not Set"}</p>}
-                </div>
-                <div>
-                  <Label className="text-[10px] font-bold text-red-400 uppercase">Emergency Phone</Label>
-                  {isEditing ? <Input className="bg-white" value={profile.emergencyPhone} onChange={(e) => setProfile({...profile, emergencyPhone: e.target.value})} /> : <p className="font-bold text-slate-700">{profile.emergencyPhone || "Not Set"}</p>}
-                </div>
-              </div>
-            </DashboardCard>
-
-            <div className="bg-[#004a7c] text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
-               <Fingerprint size={100} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
-               <h4 className="font-bold text-blue-200 uppercase text-[10px] tracking-widest mb-2">Notice</h4>
-               <p className="text-xs leading-relaxed relative z-10">
-                 Keep your profile updated. Accurate blood type and contact info are critical for your care at Alatyon Hospital.
-               </p>
+          {/* Name + badges */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-800 truncate">{profile.name || "Patient"}</h1>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <span className="flex items-center gap-1 bg-blue-50 text-[#003a66] px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+                <Fingerprint size={12} /> MRN: {profile.mrn || "—"}
+              </span>
+              <span className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold border border-red-100">
+                <Droplet size={12} /> Blood: {profile.bloodGroup || "Not Set"}
+              </span>
             </div>
+          </div>
+
+          {/* Edit / Save actions */}
+          <div className="flex gap-2 shrink-0">
+            {isEditing ? (
+              <>
+                <Button onClick={handleSave} disabled={saving}
+                  className="bg-[#003a66] hover:bg-blue-600 text-white font-bold rounded-xl h-10 px-4 text-xs gap-2">
+                  {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+                  {saving ? "Saving…" : "Save"}
+                </Button>
+                <Button onClick={handleCancel} variant="outline"
+                  className="rounded-xl h-10 px-3 border-blue-100 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200">
+                  <X size={15} />
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setIsEditing(true)}
+                className="bg-[#003a66] hover:bg-blue-600 text-white font-bold rounded-xl h-10 px-5 text-xs">
+                Edit Profile
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Info grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Left — identity + contact */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Identity */}
+          <div className="bg-white rounded-2xl border border-blue-50 p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 pb-3 border-b border-blue-50">
+              <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+                <User size={14} className="text-blue-600" />
+              </div>
+              <p className="text-xs font-black uppercase text-slate-500 tracking-widest">Identity & Health</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <Field label="Full Name"   field="name" />
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Blood Group</Label>
+                {isEditing ? (
+                  <select
+                    className="w-full h-11 rounded-xl bg-[#f0f6ff] border border-blue-100 px-3 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-300"
+                    value={profile.bloodGroup}
+                    onChange={e => setProfile(p => ({ ...p, bloodGroup: e.target.value }))}
+                  >
+                    <option value="">Select type</option>
+                    {BLOOD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                ) : (
+                  <p className="text-sm font-bold text-red-600">{profile.bloodGroup || "Not Specified"}</p>
+                )}
+              </div>
+              <Field label="Occupation"    field="occupation" />
+              <Field label="Date of Birth" field="dob" type="date" />
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div className="bg-white rounded-2xl border border-blue-50 p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 pb-3 border-b border-blue-50">
+              <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+                <MapPin size={14} className="text-blue-600" />
+              </div>
+              <p className="text-xs font-black uppercase text-slate-500 tracking-widest">Contact Info</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <Field label="Email"  field="email" type="email" readOnly />
+              <Field label="Phone"  field="phone" type="tel" />
+              <div className="sm:col-span-2">
+                <Field label="Address" field="address" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right — emergency + notice */}
+        <div className="space-y-5">
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <ShieldAlert size={16} className="text-red-500" />
+              <p className="text-xs font-black uppercase text-red-600 tracking-widest">Emergency Contact</p>
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-red-400 uppercase tracking-wide">Contact Name</Label>
+                {isEditing ? (
+                  <Input value={profile.emergencyContact ?? ""}
+                    onChange={e => setProfile(p => ({ ...p, emergencyContact: e.target.value }))}
+                    className="h-11 rounded-xl bg-white border-red-100 font-semibold focus-visible:ring-red-300" />
+                ) : (
+                  <p className="text-sm font-bold text-slate-700">{profile.emergencyContact || "Not Set"}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-red-400 uppercase tracking-wide">Emergency Phone</Label>
+                {isEditing ? (
+                  <Input value={profile.emergencyPhone ?? ""}
+                    onChange={e => setProfile(p => ({ ...p, emergencyPhone: e.target.value }))}
+                    className="h-11 rounded-xl bg-white border-red-100 font-semibold focus-visible:ring-red-300" />
+                ) : (
+                  <p className="text-sm font-bold text-slate-700">{profile.emergencyPhone || "Not Set"}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#003a66] text-white rounded-2xl p-5 shadow-lg overflow-hidden relative">
+            <Fingerprint size={90} className="absolute -right-3 -bottom-3 opacity-10 rotate-12" />
+            <p className="text-[10px] font-black uppercase text-blue-200 tracking-widest mb-2">Notice</p>
+            <p className="text-xs text-blue-100 leading-relaxed relative z-10">
+              Keep your profile updated. Accurate blood type and emergency contact info are critical for your care at Alatyon Hospital.
+            </p>
           </div>
         </div>
       </div>
