@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard",       href: "/doctor" },
   { icon: ClipboardList,   label: "Pending Reviews", href: "/doctor/pending" },
   { icon: Users,           label: "Patients",        href: "/doctor/patients" },
-  { icon: Brain,           label: "AI Reports",      href: "/doctor/reports", active: true },
+  
 ];
 
 const STATUS_COLORS = {

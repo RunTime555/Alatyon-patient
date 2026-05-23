@@ -134,7 +134,7 @@ export default function LabDashboard() {
                   {[
                     { label: "Upload New Results", href: "/lab/upload",   icon: FlaskConical,   color: "bg-blue-50 text-blue-600" },
                     { label: "View Recent Uploads", href: "/lab/recent",  icon: ClipboardCheck, color: "bg-emerald-50 text-emerald-600" },
-                    { label: "Edit Profile",        href: "/lab/settings",icon: Settings,       color: "bg-purple-50 text-purple-600" },
+                   
                   ].map(({ label, href, icon: Icon, color }) => (
                     <Link key={label} href={href}
                       className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#f0f6ff] transition-all group">

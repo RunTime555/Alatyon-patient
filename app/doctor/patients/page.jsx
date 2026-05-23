@@ -11,7 +11,6 @@ const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard",       href: "/doctor" },
   { icon: ClipboardList,   label: "Pending Reviews", href: "/doctor/pending" },
   { icon: Users,           label: "Patients",        href: "/doctor/patients", active: true },
-  { icon: Brain,           label: "AI Reports",      href: "/doctor/reports" },
 ];
 
 function Sidebar({ open, onClose, collapsed }) {
