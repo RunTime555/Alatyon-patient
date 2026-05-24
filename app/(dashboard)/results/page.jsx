@@ -344,17 +344,16 @@ export default function LabResultsPage() {
         </div>
       )}
 
-      {/* Table */}
+    {/* Table Section */}
       <div className="bg-white rounded-2xl border border-blue-50 shadow-sm overflow-hidden">
-        {/* Desktop table */}
+        
+        {/* Desktop Table */}
         <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-blue-50 bg-[#f7faff]">
                 {["Test Name", "Result Value", "Unit", "Status", "Date", "Actions"].map(h => (
-                  <th key={h} className="px-5 py-3.5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {h}
-                  </th>
+                  <th key={h} className="px-5 py-3.5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -363,59 +362,31 @@ export default function LabResultsPage() {
                 <tr>
                   <td colSpan={6} className="px-5 py-16 text-center">
                     <TestTube size={28} className="text-blue-100 mx-auto mb-3" />
-                    <p className="text-slate-400 font-bold text-sm">No results found</p>
+                    <p className="text-slate-400 font-bold text-sm">No results found.</p>
                   </td>
                 </tr>
               ) : filtered.map((r) => {
-                const st   = getStatus(r.status);
-                const Icon = st.icon;
+                const st = getStatus(r.status);
                 return (
                   <tr key={r.id} className="hover:bg-[#f7faff] transition-colors group">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-                          <ResultIcon type={r.testName} />
-                        </div>
+                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0"><ResultIcon type={r.testName} /></div>
                         <span className="font-bold text-slate-700 text-sm">{r.testName}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="text-lg font-black text-[#003a66]">
-                        {r.testValue ?? r.resultValue ?? "—"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs font-bold text-slate-400">{r.unit ?? "—"}</span>
-                    </td>
+                    <td className="px-5 py-4"><span className="text-lg font-black text-[#003a66]">{r.testValue ?? r.resultValue ?? "—"}</span></td>
+                    <td className="px-5 py-4"><span className="text-xs font-bold text-slate-400">{r.unit ?? "—"}</span></td>
                     <td className="px-5 py-4">
                       <span className={`inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full border ${st.bg} ${st.text} ${st.border}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-                        {st.label}
+                        <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />{st.label}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs font-semibold text-slate-500">
-                        {new Date(r.createdAt).toLocaleDateString()}
-                      </span>
-                    </td>
+                    <td className="px-5 py-4"><span className="text-xs font-semibold text-slate-500">{new Date(r.createdAt).toLocaleDateString()}</span></td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setSelected(r)}
-                          className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center text-blue-600 transition-all"
-                          title="View details"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        {["Verified","COMPLETED"].includes(r.status) && (
-                          <button
-                            onClick={() => downloadResult(r, data.name, data.mrn)}
-                            className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 transition-all"
-                            title="Download report"
-                          >
-                            <Download size={14} />
-                          </button>
-                        )}
+                        <button onClick={() => setSelected(r)} className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center text-blue-600"><Eye size={14} /></button>
+                        <button onClick={() => downloadResult(r, data.name, data.mrn)} className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600"><Download size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -425,67 +396,30 @@ export default function LabResultsPage() {
           </table>
         </div>
 
-        {/* Mobile card list */}
+        {/* Mobile List */}
         <div className="sm:hidden divide-y divide-blue-50">
-          {filtered.length === 0 ? (
-            <div className="p-12 text-center">
-              <TestTube size={28} className="text-blue-100 mx-auto mb-3" />
-              <p className="text-slate-400 font-bold text-sm">No results found</p>
-            </div>
-          ) : filtered.map((r) => {
-            const st   = getStatus(r.status);
-            const Icon = st.icon;
-            return (
-              <div key={r.id} className="p-4 flex items-center gap-3 hover:bg-[#f7faff]">
-                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-                  <ResultIcon type={r.testName} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-slate-700 text-sm truncate">{r.testName}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    <span className="font-bold text-[#003a66]">{r.testValue ?? r.resultValue ?? "—"}</span>
-                    {r.unit && <span className="ml-1">{r.unit}</span>}
-                    <span className="mx-1.5">·</span>
-                    {new Date(r.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full ${st.bg} ${st.text}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />{st.label}
-                  </span>
-                  <div className="flex gap-1.5">
-                    <button onClick={() => setSelected(r)}
-                      className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                      <Eye size={12} />
-                    </button>
-                    {["Verified","COMPLETED"].includes(r.status) && (
-                      <button onClick={() => downloadResult(r, data.name, data.mrn)}
-                        className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                        <Download size={12} />
-                      </button>
-                    )}
-                  </div>
-                </div>
+          {filtered.map((r) => (
+            <div key={r.id} className="p-4 flex items-center gap-3 hover:bg-[#f7faff]">
+              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0"><ResultIcon type={r.testName} /></div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-slate-700 text-sm truncate">{r.testName}</p>
+                <p className="text-xs text-slate-400 mt-0.5"><span className="font-bold text-[#003a66]">{r.testValue ?? r.resultValue ?? "—"}</span></p>
               </div>
-            );
-          })}
+              <button onClick={() => setSelected(r)} className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><Eye size={12} /></button>
+            </div>
+          ))}
         </div>
 
-        {/* Footer row count */}
+        {/* Footer */}
         {filtered.length > 0 && (
           <div className="px-5 py-3 border-t border-blue-50 bg-[#f7faff] flex items-center justify-between">
-            <p className="text-xs text-slate-400 font-semibold">
-              Showing {filtered.length} of {data.results.length} results
-            </p>
-            {search || statusFilter !== "all" ? (
-              <button onClick={() => { setSearch(""); setFilter("all"); }}
-                className="text-xs text-blue-500 hover:text-blue-700 font-bold">
-                Clear filters
-              </button>
-            ) : null}
+            <p className="text-xs text-slate-400 font-semibold">Showing {filtered.length} results</p>
+            {(search || statusFilter !== "all") && (
+              <button onClick={() => { setSearch(""); setFilter("all"); }} className="text-xs text-blue-500 hover:text-blue-700 font-bold">Clear filters</button>
+            )}
           </div>
         )}
-      </div>
-    </div>
+      </div> 
+    </div> // This closes the main space-y-5 container
   );
 }
