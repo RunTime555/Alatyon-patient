@@ -154,12 +154,7 @@ export default function DashboardPage() {
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
                       <CheckCircle2 size={10} /> Approved
                     </span>
-                    <button
-                      onClick={e => e.stopPropagation()}
-                      className="w-8 h-8 rounded-xl hover:bg-blue-50 flex items-center justify-center text-slate-300 hover:text-blue-600 transition-all shrink-0"
-                    >
-                      <Download size={14} />
-                    </button>
+                   
                   </div>
                 </div>
               );
