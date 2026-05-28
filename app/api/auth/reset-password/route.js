@@ -1,37 +1,62 @@
+// app/api/auth/reset-password/route.js
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server"; 
 import bcrypt from "bcryptjs";
 
-// TypeScript ካልሆነ (ፋይሉ .js ከሆነ) : NextRequest የሚለው መወገድ አለበት
-export async function POST(request) { 
+export async function POST(request) {
   try {
-    const { email, newPassword } = await request.json();
+    const { token, newPassword } = await request.json();
 
-    if (!email || !newPassword) {
+    if (!token || !newPassword) {
       return NextResponse.json(
-        { error: "Email and new password are required" }, 
+        { error: "Token and new password are required." },
         { status: 400 }
       );
     }
 
-    // 1. Hash the new password for security
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    if (newPassword.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters." },
+        { status: 400 }
+      );
+    }
 
-    // 2. Update the user password in the database
+    // ✅ Find user by token AND check it hasn't expired
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken:       token,
+        resetTokenExpiry: { gt: new Date() }, // must be in the future
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Reset link is invalid or has expired. Please request a new one." },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // ✅ Save new password and clear token so link can't be reused
     await prisma.user.update({
-      where: { email: email.toLowerCase() },
-      data: { password: hashedPassword },
+      where: { id: user.id },
+      data: {
+        password:         hashedPassword,
+        resetToken:       null,
+        resetTokenExpiry: null,
+      },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Password has been reset successfully. You can now login." 
+    return NextResponse.json({
+      success: true,
+      message: "Password reset successfully.",
     });
-
   } catch (error) {
     console.error("RESET_PASSWORD_ERROR:", error);
     return NextResponse.json(
-      { error: "Failed to reset password. Please try again." }, 
+      { error: "Failed to reset password. Please try again." },
       { status: 500 }
     );
   }

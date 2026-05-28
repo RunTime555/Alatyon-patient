@@ -5,24 +5,29 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, CheckCircle2, Loader2 } from "lucide-react";
+import { Lock, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
-// 1. ዋናው የፎርም ክፍል
 function ResetPasswordContent() {
-  const router = useRouter();
+  const router      = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
 
-  const [newPassword, setNewPassword] = useState("");
+  // ✅ FIX: read ?token= not ?email=
+  const [token, setToken]                   = useState("");
+  const [newPassword, setNewPassword]       = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isLoading, setIsLoading]           = useState(false);
+  const [error, setError]                   = useState("");
+  const [isSuccess, setIsSuccess]           = useState(false);
+  const [tokenMissing, setTokenMissing]     = useState(false);
 
-  // URL ላይ ያለውን ኢሜይል ለመቀበል
   useEffect(() => {
-    const emailParam = searchParams.get("email");
-    if (emailParam) setEmail(emailParam);
+    const t = searchParams.get("token");
+    if (t) {
+      setToken(t);
+    } else {
+      // No token in URL — invalid/expired link
+      setTokenMissing(true);
+    }
   }, [searchParams]);
 
   const handleSubmit = async (e) => {
@@ -33,36 +38,55 @@ function ResetPasswordContent() {
       setError("Passwords do not match!");
       return;
     }
-
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, newPassword }),
+        // ✅ FIX: send token not email
+        body: JSON.stringify({ token, newPassword }),
       });
 
       if (res.ok) {
         setIsSuccess(true);
-        // ✅ ሎጊኑ ገጽ አሁን root (/) ስለሆነ ወደዛ እንልካለን
-        setTimeout(() => router.push("/"), 3000); 
+        setTimeout(() => router.push("/login"), 3000);
       } else {
         const data = await res.json();
         setError(data.error || "Failed to reset password.");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ── Invalid / missing token ───────────────────────────────────────────────
+  if (tokenMissing) {
+    return (
+      <div className="text-center p-10 bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full">
+        <div className="flex justify-center mb-6">
+          <div className="p-3 bg-red-100 rounded-full">
+            <AlertCircle className="h-12 w-12 text-red-500" />
+          </div>
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Invalid Reset Link</h2>
+        <p className="text-slate-500 mb-8">
+          This password reset link is invalid or has expired. Please request a new one.
+        </p>
+        <Button onClick={() => router.push("/forgot-password")} className="w-full bg-blue-600 h-12">
+          Request New Link
+        </Button>
+      </div>
+    );
+  }
+
+  // ── Success ───────────────────────────────────────────────────────────────
   if (isSuccess) {
     return (
       <div className="text-center p-10 bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full">
@@ -73,39 +97,35 @@ function ResetPasswordContent() {
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Password Updated!</h2>
         <p className="text-slate-500 mb-8">
-          Your password has been changed successfully. Redirecting you to login...
+          Your password has been changed successfully. Redirecting you to login…
         </p>
-        {/* ✅ እዚህም አድራሻውን ወደ "/" ቀየርነው */}
-        <Button onClick={() => router.push("/")} className="w-full bg-blue-600 h-12">
+        <Button onClick={() => router.push("/login")} className="w-full bg-blue-600 h-12">
           Go to Login Now
         </Button>
       </div>
     );
   }
 
+  // ── Form ──────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-blue-900">Set New Password</h2>
-        <p className="text-slate-500 text-sm mt-2">Enter a strong password for your account.</p>
+        <p className="text-slate-500 text-sm mt-2">Enter a strong new password for your account.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm text-center">{error}</div>}
-        
+        {error && (
+          <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm text-center">{error}</div>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="newPassword">New Password</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <Input
-              id="newPassword"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="pl-10 h-12"
-              placeholder="••••••••"
-              required
-            />
+            <Input id="newPassword" type="password" value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              className="pl-10 h-12" placeholder="Min. 8 characters" required />
           </div>
         </div>
 
@@ -113,15 +133,9 @@ function ResetPasswordContent() {
           <Label htmlFor="confirmPassword">Confirm Password</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10 h-12"
-              placeholder="••••••••"
-              required
-            />
+            <Input id="confirmPassword" type="password" value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              className="pl-10 h-12" placeholder="••••••••" required />
           </div>
         </div>
 
@@ -133,7 +147,6 @@ function ResetPasswordContent() {
   );
 }
 
-// 2. ገጹን የሚጠቀልለው ዋናው ክፍል
 export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
