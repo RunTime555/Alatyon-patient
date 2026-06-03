@@ -10,12 +10,11 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 
-// ── Status config ──────────────────────────────────────────
+// ✅ REJECTED removed from status config
 const STATUS = {
-  Verified:       { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500", label: "Approved",  icon: CheckCircle2 },
-  COMPLETED:      { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500", label: "Approved",  icon: CheckCircle2 },
-  PENDING_DOCTOR: { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-400",  label: "Pending",   icon: Clock },
-  REJECTED:       { bg: "bg-red-50",     text: "text-red-700",     border: "border-red-200",     dot: "bg-red-500",    label: "Rejected",  icon: AlertCircle },
+  Verified:       { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500", label: "Approved", icon: CheckCircle2 },
+  COMPLETED:      { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500", label: "Approved", icon: CheckCircle2 },
+  PENDING_DOCTOR: { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-400",  label: "Pending",  icon: Clock },
 };
 const getStatus = (s) =>
   STATUS[s] ?? { bg: "bg-slate-50", text: "text-slate-600", border: "border-slate-200", dot: "bg-slate-400", label: s ?? "Unknown", icon: Clock };
@@ -51,23 +50,18 @@ function downloadSinglePDF(result, patientName, mrn) {
     doc.line(15, yy, W - 15, yy);
   };
 
-  // Header
   doc.setFillColor(0, 58, 102);
   doc.rect(0, 0, W, 28, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(18);
   doc.text("Alatyon Hospital", 15, 13);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8);
   doc.setTextColor(180, 210, 240);
   doc.text("LABORATORY RESULT REPORT", 15, 20);
   doc.setTextColor(255, 255, 255);
   doc.text(date, W - 15, 13, { align: "right" });
 
   y = 38;
-
-  // Patient info
   doc.setFillColor(247, 250, 255);
   doc.roundedRect(15, y - 5, W - 30, 34, 3, 3, "F");
   doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(148, 163, 184);
@@ -84,7 +78,6 @@ function downloadSinglePDF(result, patientName, mrn) {
   doc.text(date, 100, y + 28);
   y += 44;
 
-  // Result value
   doc.setFillColor(239, 246, 255);
   doc.setDrawColor(191, 219, 254); doc.setLineWidth(0.5);
   doc.roundedRect(15, y, W - 30, 30, 4, 4, "FD");
@@ -94,25 +87,15 @@ function downloadSinglePDF(result, patientName, mrn) {
   doc.text(`${result.testValue ?? result.resultValue ?? "—"}${result.unit ? "  " + result.unit : ""}`, W / 2, y + 23, { align: "center" });
   y += 38;
 
-  // Status badge
-  const statusLabel =
-    result.status === "COMPLETED" || result.status === "Verified" ? "APPROVED" :
-    result.status === "PENDING_DOCTOR" ? "PENDING" :
-    result.status === "REJECTED" ? "REJECTED" : "UNKNOWN";
-  const isApproved = statusLabel === "APPROVED";
-  const isPending  = statusLabel === "PENDING";
-  const bFill = isApproved ? [220,252,231] : isPending ? [254,243,199] : [254,226,226];
-  const bText = isApproved ? [22,163,74]   : isPending ? [146,64,14]   : [185,28,28];
-  doc.setFillColor(bFill[0], bFill[1], bFill[2]);
+  doc.setFillColor(220, 252, 231);
   doc.roundedRect(W/2 - 22, y, 44, 9, 2, 2, "F");
   doc.setFont("helvetica", "bold"); doc.setFontSize(7);
-  doc.setTextColor(bText[0], bText[1], bText[2]);
-  doc.text(statusLabel, W / 2, y + 6, { align: "center" });
+  doc.setTextColor(22, 163, 74);
+  doc.text("APPROVED", W / 2, y + 6, { align: "center" });
   y += 18;
 
   LINE(y); y += 7;
 
-  // Doctor remark
   const doctorText = parsed.doctor || result.doctorComment;
   if (doctorText) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(148, 163, 184);
@@ -126,7 +109,6 @@ function downloadSinglePDF(result, patientName, mrn) {
     y += boxH + 8;
   }
 
-  // AI analysis
   if (parsed.ai) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(148, 163, 184);
     doc.text("AI ANALYSIS", 15, y); y += 5;
@@ -139,12 +121,10 @@ function downloadSinglePDF(result, patientName, mrn) {
     y += boxH + 8;
   }
 
-  // Footer
   LINE(282);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 15, 288);
   doc.text("Alatyon Hospital — All rights reserved", W - 15, 288, { align: "right" });
-
   doc.save(`${result.testName.replace(/\s+/g, "_")}_${mrn}.pdf`);
 }
 
@@ -154,7 +134,6 @@ function downloadAllPDF(results, patientName, mrn) {
   const W    = 210;
   const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
-  // Header
   doc.setFillColor(0, 58, 102);
   doc.rect(0, 0, W, 28, "F");
   doc.setTextColor(255, 255, 255);
@@ -166,7 +145,6 @@ function downloadAllPDF(results, patientName, mrn) {
   doc.setTextColor(255, 255, 255);
   doc.text(date, W - 15, 13, { align: "right" });
 
-  // Patient summary
   let y = 38;
   doc.setFillColor(247, 250, 255);
   doc.roundedRect(15, y - 5, W - 30, 20, 3, 3, "F");
@@ -178,18 +156,15 @@ function downloadAllPDF(results, patientName, mrn) {
   doc.text(mrn, 100, y + 10);
   y += 26;
 
-  // Summary counts
   const approved = results.filter(r => ["Verified","COMPLETED"].includes(r.status)).length;
   const pending  = results.filter(r => r.status === "PENDING_DOCTOR").length;
-  const rejected = results.filter(r => r.status === "REJECTED").length;
 
   const boxes = [
-    { label: "Total",    value: results.length, fill: [239,246,255], text: [0,58,102] },
-    { label: "Approved", value: approved,        fill: [220,252,231], text: [22,163,74] },
-    { label: "Pending",  value: pending,         fill: [254,243,199], text: [146,64,14] },
-    { label: "Rejected", value: rejected,        fill: [254,226,226], text: [185,28,28] },
+    { label: "Total",    value: results.length, fill: [239,246,255], text: [0,58,102]   },
+    { label: "Approved", value: approved,        fill: [220,252,231], text: [22,163,74]  },
+    { label: "Pending",  value: pending,         fill: [254,243,199], text: [146,64,14]  },
   ];
-  const bw = (W - 40) / 4;
+  const bw = (W - 36) / 3;
   boxes.forEach((b, i) => {
     const bx = 15 + i * (bw + 3);
     doc.setFillColor(b.fill[0], b.fill[1], b.fill[2]);
@@ -202,57 +177,41 @@ function downloadAllPDF(results, patientName, mrn) {
   });
   y += 24;
 
-  // Table header
   doc.setFillColor(0, 58, 102);
   doc.rect(15, y, W - 30, 9, "F");
   doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
-  doc.text("TEST NAME",    20,  y + 6);
-  doc.text("VALUE",        90,  y + 6);
-  doc.text("UNIT",         120, y + 6);
-  doc.text("STATUS",       145, y + 6);
-  doc.text("DATE",         175, y + 6);
+  doc.text("TEST NAME", 20, y + 6);
+  doc.text("VALUE",     90, y + 6);
+  doc.text("UNIT",      120, y + 6);
+  doc.text("STATUS",    145, y + 6);
+  doc.text("DATE",      175, y + 6);
   y += 9;
 
-  // Table rows
   results.forEach((r, i) => {
-    if (y > 270) {
-      doc.addPage();
-      y = 20;
-    }
+    if (y > 270) { doc.addPage(); y = 20; }
     const rowBg = i % 2 === 0 ? [247,250,255] : [255,255,255];
     doc.setFillColor(rowBg[0], rowBg[1], rowBg[2]);
     doc.rect(15, y, W - 30, 10, "F");
 
-    const st          = getStatus(r.status);
-    const statusLabel =
-      r.status === "COMPLETED" || r.status === "Verified" ? "Approved" :
-      r.status === "PENDING_DOCTOR" ? "Pending" :
-      r.status === "REJECTED" ? "Rejected" : r.status ?? "—";
+    const statusLabel = ["Verified","COMPLETED"].includes(r.status) ? "Approved" : "Pending";
+    const sColor      = statusLabel === "Approved" ? [22,163,74] : [146,64,14];
 
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(30, 41, 59);
-    doc.text(r.testName?.slice(0, 28) ?? "—",                                   20,  y + 6.5);
-    doc.text(String(r.testValue ?? r.resultValue ?? "—"),                        90,  y + 6.5);
-    doc.text(r.unit ?? "—",                                                      120, y + 6.5);
-    doc.setTextColor(
-      statusLabel === "Approved" ? 22  : statusLabel === "Pending" ? 146 : 185,
-      statusLabel === "Approved" ? 163 : statusLabel === "Pending" ? 64  : 28,
-      statusLabel === "Approved" ? 74  : statusLabel === "Pending" ? 14  : 28,
-    );
-    doc.text(statusLabel,                                                         145, y + 6.5);
+    doc.text(r.testName?.slice(0, 28) ?? "—",                        20,  y + 6.5);
+    doc.text(String(r.testValue ?? r.resultValue ?? "—"),             90,  y + 6.5);
+    doc.text(r.unit ?? "—",                                           120, y + 6.5);
+    doc.setTextColor(sColor[0], sColor[1], sColor[2]);
+    doc.text(statusLabel,                                             145, y + 6.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(new Date(r.createdAt).toLocaleDateString(),                          175, y + 6.5);
-
-    // row divider
+    doc.text(new Date(r.createdAt).toLocaleDateString(),              175, y + 6.5);
     doc.setDrawColor(220, 230, 245); doc.setLineWidth(0.2);
     doc.line(15, y + 10, W - 15, y + 10);
     y += 10;
   });
 
-  // Footer
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 15, 288);
   doc.text("Alatyon Hospital — All rights reserved", W - 15, 288, { align: "right" });
-
   doc.save(`${mrn}_all_results.pdf`);
 }
 
@@ -355,14 +314,18 @@ export default function LabResultsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  const counts = useMemo(() => ({
-    all:      data.results.length,
-    approved: data.results.filter(r => ["Verified","COMPLETED"].includes(r.status)).length,
-    pending:  data.results.filter(r => r.status === "PENDING_DOCTOR").length,
-    rejected: data.results.filter(r => r.status === "REJECTED").length,
-  }), [data.results]);
+  // ✅ FIX: filter out REJECTED results entirely before any processing
+  const visibleResults = useMemo(() =>
+    data.results.filter(r => r.status !== "REJECTED"),
+  [data.results]);
 
-  const filtered = useMemo(() => data.results
+  const counts = useMemo(() => ({
+    all:      visibleResults.length,
+    approved: visibleResults.filter(r => ["Verified","COMPLETED"].includes(r.status)).length,
+    pending:  visibleResults.filter(r => r.status === "PENDING_DOCTOR").length,
+  }), [visibleResults]);
+
+  const filtered = useMemo(() => visibleResults
     .filter(r => {
       const matchSearch =
         !search ||
@@ -371,15 +334,14 @@ export default function LabResultsPage() {
       const matchStatus =
         statusFilter === "all" ||
         (statusFilter === "approved" && ["Verified","COMPLETED"].includes(r.status)) ||
-        (statusFilter === "pending"  && r.status === "PENDING_DOCTOR") ||
-        (statusFilter === "rejected" && r.status === "REJECTED");
+        (statusFilter === "pending"  && r.status === "PENDING_DOCTOR");
       return matchSearch && matchStatus;
     })
     .sort((a, b) => {
       const da = new Date(a.createdAt), db = new Date(b.createdAt);
       return sortDir === "desc" ? db - da : da - db;
     }),
-  [data.results, search, statusFilter, sortDir]);
+  [visibleResults, search, statusFilter, sortDir]);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -399,7 +361,6 @@ export default function LabResultsPage() {
           <h1 className="text-xl font-black text-slate-800">Lab Results</h1>
           <p className="text-sm text-slate-400 mt-0.5">All your test records — {data.name} · MRN: {data.mrn}</p>
         </div>
-        {/* ✅ Export All as PDF (not CSV) */}
         <button
           onClick={() => downloadAllPDF(filtered, data.name, data.mrn)}
           className="flex items-center gap-2 bg-[#003a66] hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-900/20 w-fit"
@@ -408,13 +369,12 @@ export default function LabResultsPage() {
         </button>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* ✅ Summary cards — no Rejected card */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
-          { label: "Total",    value: counts.all,      bg: "bg-blue-50",    text: "text-blue-700",    icon: Beaker },
+          { label: "Total",    value: counts.all,      bg: "bg-blue-50",    text: "text-blue-700",    icon: Beaker     },
           { label: "Approved", value: counts.approved,  bg: "bg-emerald-50", text: "text-emerald-700", icon: CheckCircle2 },
-          { label: "Pending",  value: counts.pending,   bg: "bg-amber-50",   text: "text-amber-700",   icon: Clock },
-          { label: "Rejected", value: counts.rejected,  bg: "bg-red-50",     text: "text-red-700",     icon: AlertCircle },
+          { label: "Pending",  value: counts.pending,   bg: "bg-amber-50",   text: "text-amber-700",   icon: Clock      },
         ].map(({ label, value, bg, text, icon: Icon }) => (
           <div key={label} className="bg-white rounded-2xl border border-blue-50 p-4 shadow-sm flex items-center gap-3">
             <div className={`w-9 h-9 ${bg} rounded-xl flex items-center justify-center shrink-0`}><Icon size={16} className={text} /></div>
@@ -448,14 +408,13 @@ export default function LabResultsPage() {
         </button>
       </div>
 
-      {/* Filter chips */}
+      {/* ✅ Filter chips — no Rejected option */}
       {showFilter && (
         <div className="flex flex-wrap gap-2 bg-white border border-blue-100 rounded-2xl p-4">
           {[
             { key: "all",      label: `All (${counts.all})` },
             { key: "approved", label: `Approved (${counts.approved})` },
             { key: "pending",  label: `Pending (${counts.pending})` },
-            { key: "rejected", label: `Rejected (${counts.rejected})` },
           ].map(({ key, label }) => (
             <button key={key} onClick={() => setFilter(key)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all
@@ -468,7 +427,6 @@ export default function LabResultsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-blue-50 shadow-sm overflow-hidden">
-        {/* Desktop */}
         <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -540,10 +498,9 @@ export default function LabResultsPage() {
           ))}
         </div>
 
-        {/* Footer */}
         {filtered.length > 0 && (
           <div className="px-5 py-3 border-t border-blue-50 bg-[#f7faff] flex items-center justify-between">
-            <p className="text-xs text-slate-400 font-semibold">Showing {filtered.length} of {data.results.length} results</p>
+            <p className="text-xs text-slate-400 font-semibold">Showing {filtered.length} of {visibleResults.length} results</p>
             {(search || statusFilter !== "all") && (
               <button onClick={() => { setSearch(""); setFilter("all"); }} className="text-xs text-blue-500 hover:text-blue-700 font-bold">Clear filters</button>
             )}

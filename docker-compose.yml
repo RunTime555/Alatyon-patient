@@ -1,16 +1,57 @@
-services:
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    env_file:
-      - .env  # ይህ ፋይል በውስጡ ያለውን DATABASE_URL እንዲያነብ ያደርገዋል
-    environment:
-      - NODE_ENV=development
+version: "3.9"
 
-# የ "db" ክፍል ተሰርዟል ምክንያቱም Neon ስለምንጠቀም
+services:
+
+  # ── Next.js App (scalable) ─────────────────────────────────
+  app:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      - PORT=3000
+    expose:
+      - "3000"
+    networks:
+      - alatyon_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      # ── Auto-scaling rules ──────────────────────────────
+      replicas: 1          # start with 1 instance
+      resources:
+        limits:
+          cpus: "0.5"      # max 50% CPU per instance
+          memory: 512M     # max 512MB RAM per instance
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1     # update one instance at a time (zero downtime)
+        delay: 10s
+
+  # ── Nginx Load Balancer ────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: alatyon_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - alatyon_network
+
+networks:
+  alatyon_network:
+    driver: bridge
