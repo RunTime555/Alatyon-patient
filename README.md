@@ -1,6 +1,6 @@
  🏥 Alatyon Hospital — Patient Portal
 
-> Patient-facing portal** for viewing lab results, downloading PDF reports, managing personal health profile, and resetting passwords — built with Next.js 16, Prisma, and PostgreSQL (Neon).
+>  This Patient portal is used for viewing lab results, downloading PDF reports, managing personal health profile, and resetting passwords — built with Next.js 16, Prisma, and PostgreSQL (Neon).
 
 📋 Table of Contents
 
