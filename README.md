@@ -128,83 +128,8 @@ Live URL: [https://alatyon-patent-page.vercel.app](https://alatyon-patent-page.v
 
 
 
- 📁 Project Structure
 
 
-Alatyon-patient/
-├── app/
-│   ├── api/
-│   │   ├── auth/
-│   │   │   ├── login/route.js             # Patient login
-│   │   │   ├── logout/route.js            # Logout + cookie clear
-│   │   │   ├── forgot-password/route.js   # Send reset email
-│   │   │   └── reset-password/route.js    # Verify token + update password
-│   │   ├── dashboard/route.js             # Patient data + results
-│   │   └── health/route.js                # Docker health check
-│   ├── (patient)/                         # Protected patient routes
-│   │   ├── dashboard/page.tsx             # Patient dashboard
-│   │   ├── results/page.tsx               # Lab results list + PDF download
-│   │   └── profile/page.tsx               # Patient profile
-│   ├── login/page.tsx                     # Patient login page
-│   ├── forgot-password/page.tsx           # Forgot password form
-│   ├── reset-password/page.tsx            # Set new password
-│   └── layout.tsx                         # Root layout
-├── components/
-│   ├── header.tsx                         # Page header component
-│   ├── dashboard-card.tsx                 # Card wrapper component
-│   └── ui/                                # shadcn/ui components
-├── lib/
-│   ├── prisma.js                          # Prisma singleton client
-│   └── auth.js                            # JWT utilities
-├── prisma/
-│   └── schema.prisma                      # Database schema (shared)
-├── nginx/
-│   └── nginx.conf                         # Nginx config
-├── middleware.js                          # Route protection + rate limiting
-├── Dockerfile                             # Multi-stage Docker build
-├── docker-compose.yml                     # Container orchestration
-└── scale.sh                              # Auto-scaling script
-
-
-
- 🔄 Application Flow
-
-
-Patient visits portal
-        │
-        ▼
-Login with email + password
-        │
-        ▼
-JWT cookie set (patient_token)
-        │
-        ▼
-Redirect to /dashboard
-        │
-        ├──── View Dashboard
-        │     (summary stats + recent results)
-        │
-        ├──── View Lab Results (/results)
-        │     │
-        │     ├── Only APPROVED results shown
-        │     │   (REJECTED hidden from patient)
-        │     │
-        │     ├── Filter: All / Approved / Pending
-        │     │
-        │     ├── Click Eye icon → Detail Modal
-        │     │   (value, doctor remark, AI analysis)
-        │     │
-        │     └── Click Download → PDF saved to device
-        │         (individual result or all results)
-        │
-        ├──── View Profile (/profile)
-        │     (edit personal info, change password)
-        │
-        └──── Logout
-              (cookie cleared, redirect to login)
-
-
- 
 
  🌐 API Routes
 
