@@ -46,7 +46,7 @@ function StatusBadge({ status }) {
 export default function ResultDetailPage({ params }) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
-  const result = mockResultDetails; // ወደፊት እዚህ ጋር fetch(api/results/${id}) ይደረጋል
+  const result = mockResultDetails; 
 
   const handlePrint = () => window.print();
 
@@ -56,7 +56,7 @@ export default function ResultDetailPage({ params }) {
 
       <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
         
-        {/* Breadcrumb - ለሞባይል ምቹ እንዲሆን */}
+      
         <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto whitespace-nowrap pb-2">
           <Link href="/dashboard" className="hover:text-[#004a7c]">Dashboard</Link>
           <ChevronRight className="h-3 w-3" />
